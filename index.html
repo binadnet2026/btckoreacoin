@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BTCKOREA - 텔레그램 미니앱</title>
+    
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" onload="this.media='all'">
+
+    <style>
+        /* 텔레그램 미니앱 기본 여백 제거 */
+        body, html {
+            margin: 0;
+            padding: 0;
+            background-color: var(--tg-theme-bg-color, #070707);
+        }
+
+        /* ====================================================
+           1. 베이스 & 전체 배경 설정 (BTCKOREA 다크 테마 확장)
+           ==================================================== */
+        .btck-full-wrapper {
+            box-sizing: border-box;
+            font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+            background: radial-gradient(circle at 15% 10%, rgba(212, 175, 55, .12), transparent 26%),
+                radial-gradient(circle at 85% 20%, rgba(212, 175, 55, .08), transparent 20%),
+                linear-gradient(180deg, #050505 0%, #0b0b0c 100%);
+            background-color: #070707;
+            color: #f7f3e8;
+            min-height: 100vh;
+            padding: 40px 20px 100px 20px;
+        }
+
+        .btck-full-wrapper * {
+            box-sizing: border-box;
+        }
+
+        /* ====================================================
+           2. 순수 CSS 텍스트 로고 마크
+           ==================================================== */
+        .btck-hero-header {
+            text-align: center;
+            margin-bottom: 25px;
+            animation: fade-up 0.6s ease-out;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btck-css-emblem {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8c6b11 0%, #d4af37 50%, #f1d37a 100%);
+            color: #0b0d16;
+            font-size: 34px;
+            font-weight: 900;
+            display: grid;
+            place-items: center;
+            margin-bottom: 14px;
+            position: relative;
+            box-shadow: 0 0 25px rgba(212, 175, 55, 0.35),
+                inset 0 2px 4px rgba(255, 255, 255, 0.4);
+        }
+
+        .btck-css-emblem::before,
+        .btck-css-emblem::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 38px;
+            border: 3px solid #d4af37;
+            border-radius: 50%;
+            top: 10px;
+            opacity: 0.7;
+            filter: drop-shadow(0 0 4px rgba(212, 175, 55, 0.4));
+        }
+
+        .btck-css-emblem::before {
+            left: -26px;
+            transform: rotate(-25deg);
+            border-right: 0;
+        }
+
+        .btck-css-emblem::after {
+            right: -26px;
+            transform: rotate(25deg);
+            border-left: 0;
+        }
+
+        .btck-css-logo-text {
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: 0.06em;
+            background: linear-gradient(135deg, #ffffff 20%, #f1d37a 70%, #8c6b11 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 10px rgba(212, 175, 55, 0.3));
+            text-transform: uppercase;
+            margin: 0;
+            padding-left: 6px;
+        }
+
+        @media (max-width: 600px) {
+            .btck-css-emblem {
+                width: 54px;
+                height: 54px;
+                font-size: 28px;
+            }
+            .btck-css-emblem::before { left: -22px; height: 32px; }
+            .btck-css-emblem::after { right: -22px; height: 32px; }
+            .btck-css-logo-text { font-size: 26px; }
+        }
+
+        /* ====================================================
+           3. 메인 폼 패널 (카드 디자인)
+           ==================================================== */
+        .btck-form-panel {
+            max-width: 680px;
+            margin: 0 auto;
+            background: #121214;
+            border-radius: 24px;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            padding: 35px 30px;
+            box-shadow: 0 22px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .btck-steps-nav {
+            display: flex;
+            justify-content: space-between;
+            background: #18181b;
+            border-radius: 16px;
+            padding: 14px 20px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .btck-step {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #5f6b85;
+        }
+
+        .btck-step.active { color: #00f3ff; }
+
+        .btck-step-num {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #2a334a;
+            color: #8c9bb7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .btck-step.active .btck-step-num {
+            background: #00f3ff;
+            color: #121214;
+        }
+
+        .btck-section-title {
+            display: flex;
+            align-items: center;
+            font-size: 17px;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 25px 0 15px 0;
+        }
+
+        .btck-section-title::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 16px;
+            background: #d4af37;
+            margin-right: 10px;
+            border-radius: 2px;
+        }
+
+        .btck-section-title span.req {
+            color: #ff5a47;
+            margin-left: 5px;
+            font-size: 16px;
+        }
+
+        /* ====================================================
+           4. 폼 요소 스타일
+           ==================================================== */
+        .btck-form-group { margin-bottom: 15px; }
+
+        .btck-coin-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        .btck-coin-radio { display: none; }
+
+        .btck-coin-card {
+            background: #18181b;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 14px 0;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btck-coin-sym { font-size: 15px; font-weight: 800; color: #fff; }
+        .btck-coin-name { font-size: 11px; color: #8c9bb7; }
+
+        .btck-coin-card:hover { background: rgba(255, 255, 255, 0.05); }
+
+        .btck-coin-radio:checked+.btck-coin-card {
+            background: rgba(212, 175, 55, 0.1);
+            border-color: #d4af37;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.15);
+        }
+
+        .btck-coin-radio:checked+.btck-coin-card .btck-coin-sym { color: #f1d37a; }
+        .btck-coin-radio:checked+.btck-coin-card .btck-coin-name { color: #fff; font-weight: 700; }
+
+        .btck-input, .btck-select {
+            width: 100%;
+            background: #18181b;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #fff;
+            padding: 14px 18px;
+            border-radius: 12px;
+            font-size: 14px;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .btck-input:focus, .btck-select:focus {
+            border-color: #f1d37a;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .btck-input::placeholder { color: #5f6b85; }
+
+        .btck-select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23b6ae9d' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            padding-right: 35px;
+        }
+        .btck-select option { background-color: #121214 !important; color: #ffffff !important; }
+
+        .btck-row-half {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btck-contact-wrap { display: flex; gap: 10px; }
+        .btck-contact-wrap select { flex: 0 0 110px; }
+
+        /* ====================================================
+           5. 금액 입력 & 계산기 영역
+           ==================================================== */
+        .btck-amount-wrap { position: relative; }
+        .btck-amount-wrap .currency {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #d4af37;
+            font-weight: 700;
+            pointer-events: none;
+        }
+
+        .btck-calc-box {
+            background: linear-gradient(180deg, rgba(212, 175, 55, 0.08) 0%, rgba(0, 0, 0, 0.2) 100%);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .btck-calc-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 13px;
+            color: #b6ae9d;
+        }
+
+        .btck-calc-row:last-child {
+            margin-bottom: 0;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px dashed rgba(212, 175, 55, 0.2);
+        }
+
+        .btck-calc-row strong { color: #ffffff; font-weight: 600; }
+        .btck-calc-row.highlight strong { color: #00f3ff; font-size: 17px; font-weight: 800; }
+
+        /* ====================================================
+           6. 수수료 안내표
+           ==================================================== */
+        .btck-fee-box {
+            background: linear-gradient(180deg, rgba(212, 175, 55, 0.05) 0%, rgba(0, 0, 0, 0.4) 100%);
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 25px;
+            margin-top: 10px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .btck-fee-title {
+            color: #d4af37;
+            font-size: 17px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btck-fee-title::before {
+            content: '';
+            display: block;
+            width: 4px;
+            height: 16px;
+            background: linear-gradient(135deg, #d4af37, #f1d37a);
+            border-radius: 4px;
+        }
+
+        .btck-fee-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .btck-fee-list li {
+            display: flex;
+            align-items: center;
+            color: #f7f3e8;
+            font-size: 14px;
+            font-weight: 500;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+        }
+
+        .btck-fee-list li:last-child { border-bottom: none; padding-bottom: 0; }
+        .btck-fee-list .dot { color: #5f6b85; margin-right: 8px; }
+        .btck-fee-list .fee-percent { color: #00f3ff; font-weight: 800; font-size: 15px; margin-left: auto; }
+        .btck-fee-note { margin-top: 18px; font-size: 13px; color: rgba(255, 255, 255, 0.4); text-align: right; }
+
+        /* 유의사항 및 버튼 */
+        .btck-notice-box {
+            background: rgba(212, 175, 55, 0.04);
+            border: 1px solid rgba(212, 175, 55, 0.12);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 10px;
+            margin-bottom: 25px;
+        }
+
+        .btck-notice-box ul { margin: 0; padding-left: 20px; font-size: 12px; color: #b6ae9d; line-height: 1.7; }
+        .btck-notice-box li strong { color: #f1d37a; }
+
+        .btck-agree-label {
+            display: flex; align-items: center; gap: 8px; cursor: pointer;
+            font-size: 13px; font-weight: 600; user-select: none; margin-bottom: 25px; justify-content: center;
+        }
+        .btck-agree-label input { width: 16px; height: 16px; accent-color: #d4af37; cursor: pointer; }
+
+        .btck-submit-btn {
+            width: 100%; padding: 18px; border: none; border-radius: 14px;
+            background: linear-gradient(135deg, #d4af37, #f1d37a); color: #0b0d16;
+            font-size: 17px; font-weight: 800; cursor: pointer; transition: all 0.2s ease;
+            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.2);
+        }
+
+        .btck-submit-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(212, 175, 55, 0.35); }
+        .btck-submit-btn:disabled { background: #2a334a; color: #5f6b85; box-shadow: none; cursor: not-allowed; transform: none; }
+
+        .btck-consult-btn {
+            display: block; width: 100%; padding: 16px; margin-top: 10px;
+            border: 1px solid rgba(0, 243, 255, 0.3); border-radius: 14px;
+            background: rgba(0, 243, 255, 0.05); color: #00f3ff;
+            font-size: 16px; font-weight: 700; text-align: center; text-decoration: none; transition: all 0.2s ease; box-sizing: border-box;
+        }
+
+        .btck-consult-btn:hover { background: rgba(0, 243, 255, 0.15); border-color: rgba(0, 243, 255, 0.6); transform: translateY(-2px); }
+
+        @media (max-width: 600px) {
+            .btck-form-panel { padding: 25px 20px; }
+            .btck-steps-nav { display: none; }
+            .btck-coin-grid { grid-template-columns: repeat(3, 1fr); }
+            .btck-row-half { grid-template-columns: 1fr; gap: 0; }
+            .btck-contact-wrap { flex-direction: column; }
+            .btck-contact-wrap select { width: 100%; margin-bottom: 8px; }
+        }
+
+        /* 팝업 모달 */
+        .btck-popup-overlay {
+            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px);
+            z-index: 999999; display: flex; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden; transition: 0.25s ease;
+        }
+        .btck-popup-overlay.active { opacity: 1; visibility: visible; }
+
+        .btck-popup-content {
+            background: #121624; border: 1px solid #d4af37; border-radius: 20px;
+            padding: 30px 20px; width: 90%; max-width: 360px; text-align: center; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+        }
+
+        .btck-popup-title { color: #f1d37a; font-size: 20px; font-weight: 800; margin-bottom: 12px; }
+        .btck-popup-text { color: #f7f3e8; font-size: 14px; line-height: 1.6; margin-bottom: 20px; word-break: keep-all; }
+        
+        .btck-popup-link {
+            display: block; margin: 15px 0; padding: 12px; background: rgba(0, 243, 255, 0.08);
+            color: #00f3ff; border: 1px solid rgba(0, 243, 255, 0.2); border-radius: 10px; font-weight: 700; text-decoration: none; transition: 0.2s;
+        }
+
+        .btck-popup-btn {
+            background: linear-gradient(135deg, #d4af37, #f1d37a); color: #0b0d16; border: none; width: 100%;
+            padding: 14px; border-radius: 10px; font-size: 15px; font-weight: 800; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="btck-full-wrapper">
+    <div class="btck-hero-header">
+        <div class="btck-css-emblem">₿</div>
+        <h1 class="btck-css-logo-text">BTCKOREA</h1>
+    </div>
+
+    <div class="btck-form-panel">
+        <div class="btck-steps-nav">
+            <div class="btck-step active"><span class="btck-step-num">1</span> 정보 입력</div>
+            <div class="btck-step"><span class="btck-step-num">2</span> 보안 검증</div>
+            <div class="btck-step"><span class="btck-step-num">3</span> 신청 완료</div>
+        </div>
+
+        <form id="telegram-apply-form">
+            <div class="btck-section-title" style="margin-top:0;">01. 신청 자산 및 수량 설정<span class="req">*</span></div>
+            <div class="btck-form-group">
+                <div class="btck-coin-grid">
+                    <input type="radio" name="coin_type" id="token_btc" value="비트코인(BTC)" checked class="btck-coin-radio">
+                    <label for="token_btc" class="btck-coin-card"><span class="btck-coin-sym">BTC</span><span class="btck-coin-name">비트코인</span></label>
+
+                    <input type="radio" name="coin_type" id="token_usdt" value="테더(USDT)" class="btck-coin-radio">
+                    <label for="token_usdt" class="btck-coin-card"><span class="btck-coin-sym">USDT</span><span class="btck-coin-name">테더</span></label>
+
+                    <input type="radio" name="coin_type" id="token_eth" value="이더리움(ETH)" class="btck-coin-radio">
+                    <label for="token_eth" class="btck-coin-card"><span class="btck-coin-sym">ETH</span><span class="btck-coin-name">이더리움</span></label>
+
+                    <input type="radio" name="coin_type" id="token_trx" value="트론(TRX)" class="btck-coin-radio">
+                    <label for="token_trx" class="btck-coin-card"><span class="btck-coin-sym">TRX</span><span class="btck-coin-name">트론</span></label>
+
+                    <input type="radio" name="coin_type" id="token_xrp" value="리플(XRP)" class="btck-coin-radio">
+                    <label for="token_xrp" class="btck-coin-card"><span class="btck-coin-sym">XRP</span><span class="btck-coin-name">리플</span></label>
+                </div>
+            </div>
+
+            <div class="btck-row-half" style="align-items: flex-start;">
+                <div class="btck-form-group">
+                    <div class="btck-amount-wrap">
+                        <input type="text" id="apply_amount" class="btck-input" placeholder="구매 금액 (원화)" style="padding-right: 40px;" required>
+                        <span class="currency">원</span>
+                    </div>
+                    
+                    <div class="btck-calc-box" id="calc_result" style="display: none;">
+                        <div class="btck-calc-row"><span>적용 수수료율</span> <strong id="calc_fee_rate">0%</strong></div>
+                        <div class="btck-calc-row"><span>수수료 차감 후 금액</span> <strong id="calc_net_amount">0원</strong></div>
+                        <div class="btck-calc-row highlight"><span>예상 수령 코인</span> <strong id="calc_expected_coin">0 BTC</strong></div>
+                    </div>
+                </div>
+                <div class="btck-form-group">
+                    <input type="text" id="purpose" class="btck-input" placeholder="대행 목적 (예: 바이낸스 전송)">
+                </div>
+            </div>
+
+            <div class="btck-section-title">02. 전송 지갑 정보<span class="req">*</span></div>
+            <div class="btck-form-group">
+                <input type="text" id="wallet_address" class="btck-input" placeholder="코인을 수령할 정확한 지갑 주소를 입력하세요" required>
+            </div>
+            <div class="btck-form-group">
+                <input type="text" id="destination_tag" class="btck-input" placeholder="데스티네이션 태그 / 메모 (해당 시 입력)">
+            </div>
+
+            <div class="btck-section-title">03. 신청인 정보<span class="req">*</span></div>
+            <div class="btck-row-half">
+                <div class="btck-form-group">
+                    <input type="text" id="depositor_name" class="btck-input" placeholder="이름 (실제 입금자명과 일치)" required>
+                </div>
+                <div class="btck-form-group">
+                    <div class="btck-contact-wrap">
+                        <select id="contact_type" class="btck-select">
+                            <option value="텔레그램">텔레그램</option>
+                            <option value="카카오톡">카카오톡</option>
+                            <option value="전화번호">전화번호</option>
+                        </select>
+                        <input type="text" id="contact_info" class="btck-input" placeholder="계정 ID 또는 번호" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btck-fee-box">
+                <div class="btck-fee-title">대행 수수료 안내</div>
+                <ul class="btck-fee-list">
+                    <li><span class="dot">•</span> 10,000,000원 이상 <span class="fee-percent">0.1%</span></li>
+                    <li><span class="dot">•</span> 3,000,000원 이상 <span class="fee-percent">0.5%</span></li>
+                    <li><span class="dot">•</span> 3,000,000원 이하 <span class="fee-percent">1.0%</span></li>
+                    <li><span class="dot">•</span> 1,000,000원 이하 <span class="fee-percent">1.5%</span></li>
+                    <li><span class="dot">•</span> 500,000원 이하 <span class="fee-percent">2.0%</span></li>
+                    <li><span class="dot">•</span> 300,000원 이하 <span class="fee-percent">3.0%</span></li>
+                    <li><span class="dot">•</span> 100,000원 이하 <span class="fee-percent">5.0%</span></li>
+                </ul>
+                <div class="btck-fee-note">* 네트워크 수수료는 별도 차감됩니다.</div>
+            </div>
+
+            <div class="btck-notice-box">
+                <ul>
+                    <li><strong>네트워크 오입금 주의:</strong> 지갑 주소가 잘못 입력되었을 경우 가상자산 특성상 승인 후 취소가 불가합니다.</li>
+                    <li><strong>실명 입금 원칙:</strong> 입력하신 입금자명과 실제 뱅킹 송금자명이 일치하지 않으면 처리가 지연될 수 있습니다.</li>
+                </ul>
+            </div>
+
+            <label class="btck-agree-label">
+                <input type="checkbox" id="agree_check" required>
+                유의사항을 모두 확인하였으며, 신청에 동의합니다.
+            </label>
+
+            <button type="submit" class="btck-submit-btn" id="submitBtn">코인대행 신속 신청하기</button>
+            <a href="https://t.me/btckorea2" target="_blank" class="btck-consult-btn">실시간상담하기</a>
+
+        </form>
+    </div>
+
+    <footer style="margin-top: 50px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 30px; color: #8c9bb7; font-size: 13px; line-height: 1.6;">
+        <div style="max-width: 1200px; margin: 0 auto; text-align: left;">
+            <h2 style="color: #d4af37; font-size: 18px; font-weight: 800; margin: 0 0 5px 0;">BTCKOREA</h2>
+            <p style="margin: 0; color: #d1d5db;">안전하고 빠른 디지털 자산 거래 커뮤니티<br>비트코인·이더리움·리플 구매 및 전송 대행 전문</p>
+            <div style="font-size: 12px; color: #5f6b85; margin-bottom: 20px; margin-top: 2px;">
+                <span style="display: inline-block; margin-right: 15px;">상호: BTC코리아 (BTCKOREA)</span>
+                <span style="display: inline-block; margin-right: 15px;">대표자: 김도윤</span>
+                <span style="display: inline-block; margin-right: 15px;">사업자등록번호: 233-81-08422</span>
+            </div>
+            <div style="background-color: #121214; padding: 12px; border-radius: 8px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.03);">
+                <strong style="color: #ff5a47;">[투자 유의사항]</strong> 가상자산은 법정화폐가 아니며, 특정 주체가 가치를 보장하지 않습니다. 가상자산은 365일
+                24시간 전 세계에서 거래되며, 다양한 요인에 의해 급격한 시세 변동이 발생할 수 있으니 신중한 투자를 부탁드립니다.
+            </div>
+            <div style="text-align: center; color: #4e5d7c;">© 2026 BTCKOREA. All rights reserved.</div>
+        </div>
+    </footer>
+</div>
+
+<div class="btck-popup-overlay" id="successModal">
+    <div class="btck-popup-content">
+        <div class="btck-popup-title">🎉 접수 완료</div>
+        <div class="btck-popup-text">
+            디지털 자산 대행 신청이 정상적으로 기록되었습니다.<br>
+            담당자가 내용을 확인 후 신속히 연락드리겠습니다.
+        </div>
+        <a href="https://t.me/btckorea2" target="_blank" class="btck-popup-link">⚡ 텔레그램 빠른 상담: @BTCKOREA2</a>
+        <button class="btck-popup-btn"
+            onclick="document.getElementById('successModal').classList.remove('active')">닫기</button>
+    </div>
+</div>
+
+<script>
+    // 텔레그램 미니 앱 초기화 및 전체 화면 확장 (필수)
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+
+    // 전역 시세 저장소
+    window.coinPrices = {};
+
+    // 1. 실시간 업비트 시세 가져오기
+    async function fetchPricesSilent() {
+        const fetchMarkets = ["KRW-BTC", "KRW-USDT", "KRW-ETH", "KRW-TRX", "KRW-XRP"];
+        try {
+            const url = "https://api.upbit.com/v1/ticker?markets=" + fetchMarkets.join(",");
+            const res = await fetch(url);
+            if (!res.ok) throw new Error("Fetch failed");
+            
+            const data = await res.json();
+            data.forEach(item => {
+                const symbol = item.market.replace('KRW-', '');
+                window.coinPrices[symbol] = item.trade_price;
+            });
+            // 가격을 불러온 뒤 입력값이 존재하면 계산기 재실행
+            if(typeof window.calculateCoinAmount === 'function') {
+                window.calculateCoinAmount();
+            }
+        } catch (e) {
+            console.warn("업비트 시세를 불러오지 못했습니다.");
+        }
+    }
+
+    // 2. 실시간 코인 수량 계산 로직 (수수료 1.5% 적용됨)
+    window.calculateCoinAmount = function() {
+        const amountInput = document.getElementById('apply_amount').value.replace(/,/g, '');
+        const amount = parseFloat(amountInput);
+        const resultBox = document.getElementById('calc_result');
+
+        if (isNaN(amount) || amount <= 0) {
+            resultBox.style.display = 'none';
+            return;
+        }
+
+        // 수수료율 판별
+        let feeRate = 0;
+        if (amount >= 10000000) feeRate = 0.001; 
+        else if (amount >= 3000000) feeRate = 0.005; 
+        else if (amount > 1000000) feeRate = 0.01;   
+        else if (amount > 500000) feeRate = 0.015;  
+        else if (amount > 300000) feeRate = 0.02;   
+        else if (amount > 100000) feeRate = 0.03;   
+        else feeRate = 0.05;                        
+
+        const feeKrw = amount * feeRate;
+        const netKrw = amount - feeKrw;
+
+        // 선택된 코인 파악
+        const checkedInput = document.querySelector('input[name="coin_type"]:checked');
+        let coinSymbol = 'BTC'; 
+        if(checkedInput) {
+            coinSymbol = checkedInput.id.replace('token_', '').toUpperCase();
+        }
+
+        document.getElementById('calc_fee_rate').innerText = (feeRate * 100).toFixed(1) + '% (-' + Math.floor(feeKrw).toLocaleString() + '원)';
+        document.getElementById('calc_net_amount').innerText = Math.floor(netKrw).toLocaleString() + '원';
+
+        if (window.coinPrices && window.coinPrices[coinSymbol]) {
+            const price = window.coinPrices[coinSymbol];
+            const coinAmount = netKrw / price;
+            
+            let decimals = 8;
+            if (['XRP', 'TRX'].includes(coinSymbol)) decimals = 2;
+            else if (['USDT'].includes(coinSymbol)) decimals = 4;
+            
+            document.getElementById('calc_expected_coin').innerText = coinAmount.toFixed(decimals) + ' ' + coinSymbol;
+            document.getElementById('calc_expected_coin').style.color = '#00f3ff';
+        } else {
+            document.getElementById('calc_expected_coin').innerText = '시세 로딩중/수동계산';
+            document.getElementById('calc_expected_coin').style.color = '#d4af37';
+        }
+
+        resultBox.style.display = 'block';
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        fetchPricesSilent();
+    });
+
+    // 3. 코인 선택 변경 시 계산기 자동 업데이트
+    document.querySelectorAll('.btck-coin-radio').forEach(radio => {
+        radio.addEventListener('change', window.calculateCoinAmount);
+    });
+
+    // 4. 금액 입력 시 콤마 처리 및 계산기 연동
+    document.getElementById('apply_amount').addEventListener('input', function (e) {
+        let value = e.target.value.replace(/[^0-9]/g, '');
+        e.target.value = value ? Number(value).toLocaleString('ko-KR') : '';
+        if(typeof window.calculateCoinAmount === 'function') window.calculateCoinAmount();
+    });
+
+    // 환경 정보 수집 로직
+    function parseEnvironment() {
+        const ua = navigator.userAgent;
+        let browser = "알 수 없음", os = "알 수 없음";
+
+        if (ua.includes("Firefox")) browser = "Firefox";
+        else if (ua.includes("SamsungBrowser")) browser = "Samsung Internet";
+        else if (ua.includes("Opera") || ua.includes("OPR")) browser = "Opera";
+        else if (ua.includes("Trident")) browser = "IE";
+        else if (ua.includes("Edge") || ua.includes("Edg")) browser = "Edge";
+        else if (ua.includes("Chrome")) browser = "Chrome";
+        else if (ua.includes("Safari")) browser = "Safari";
+
+        if (ua.includes("Win")) os = "Windows";
+        else if (ua.includes("Mac")) os = "MacOS";
+        else if (ua.includes("X11") || ua.includes("Linux")) os = "Linux";
+        else if (ua.includes("Android")) os = "Android";
+        else if (ua.includes("like Mac")) os = "iOS";
+
+        return { browser, os };
+    }
+
+    // 폼 전송(Submit) 이벤트
+    document.getElementById('telegram-apply-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const submitBtn = document.getElementById('submitBtn');
+        const originalText = submitBtn.innerText;
+        submitBtn.innerText = "신청중...";
+        submitBtn.disabled = true;
+
+        const env = parseEnvironment();
+        let ip = "조회 불가", country = "조회 불가", city = "조회 불가";
+
+        try {
+            const geoResponse = await fetch('https://ipapi.co/json/');
+            const geoData = await geoResponse.json();
+            ip = geoData.ip || ip;
+            country = geoData.country_name || country;
+            city = geoData.city || city;
+        } catch (err) { }
+
+        // 텔레그램 앱 내에서 실행 시, 유저 정보 긁어오기 (추가된 기능)
+        let tgUserInfo = "외부 브라우저 접속";
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            const user = tg.initDataUnsafe.user;
+            tgUserInfo = `[고유ID: ${user.id} / 닉네임: @${user.username || '없음'} / 이름: ${user.first_name || ''} ${user.last_name || ''}]`;
+        }
+
+        const coinType = document.querySelector('input[name="coin_type"]:checked').value;
+        const amount = document.getElementById('apply_amount').value;
+        const address = document.getElementById('wallet_address').value;
+        const tag = document.getElementById('destination_tag').value || '없음';
+        
+        // 목적 내용에 계산 결과 합치기
+        const basePurpose = document.getElementById('purpose').value || '없음';
+        const expectedCoinVal = document.getElementById('calc_expected_coin') ? document.getElementById('calc_expected_coin').innerText : '';
+        const combinedPurpose = `[요청액: ${amount}원 / 수령예상: ${expectedCoinVal}]\n대행목적: ${basePurpose}`;
+
+        const contactType = document.getElementById('contact_type').value;
+        const contactValue = document.getElementById('contact_info').value || '미입력';
+        const finalContactInfo = `[${contactType}] ${contactValue}`;
+
+        const depositor = document.getElementById('depositor_name').value;
+        // 텔레그램 유저 정보까지 덧붙이기
+        const combinedDepositorName = `${depositor}\n\n\n🌐 [보안/접속환경]\n- IP: ${ip}\n- 국가/위치: ${country} / ${city}\n- OS/브라우저: ${env.os} / ${env.browser}\n- 텔레그램 앱: ${tgUserInfo}`;
+
+        const formData = {
+            coinType: `${coinType}`,
+            walletAddress: `주소: ${address} (태그/메모: ${tag})`,
+            purpose: combinedPurpose,
+            contactInfo: finalContactInfo,
+            depositorName: combinedDepositorName
+        };
+
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwa80YZIkfGb3HSdHbMm1gl5ryGiHr9YpiV1AUu_iHqbTFW_H3eyK-OnTeiOvs-Oix1AQ/exec";
+
+        try {
+            await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(formData)
+            });
+        } catch (error) {
+            // CORS 에러 방어 로직
+        } finally {
+            document.getElementById('successModal').classList.add('active');
+            document.getElementById('telegram-apply-form').reset();
+            document.getElementById('calc_result').style.display = 'none'; 
+            submitBtn.innerText = originalText;
+            submitBtn.disabled = false;
+        }
+    });
+</script>
+</body>
+</html>
